@@ -14,7 +14,7 @@ class ProTaskApp(ctk.CTk):
         super().__init__()
 
         # --- Configurações de Janela ---
-        self.title("ProTask Pericial")
+        self.title("Gestão SAPO")
         self.largura_normal = 950
         self.altura_normal = 700
         self.largura_mini = 280

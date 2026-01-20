@@ -18,9 +18,8 @@ class ProTaskApp(ctk.CTk):
         self.largura_normal = 950
         self.altura_normal = 700
         self.largura_mini = 280
-        self.altura_mini = 90
+        self.altura_mini = 100 # Aumentei um pouco para caber melhor a info
         
-        # Centralizar na abertura
         self.geometry(f"{self.largura_normal}x{self.altura_normal}")
         
         # Estado
@@ -33,7 +32,6 @@ class ProTaskApp(ctk.CTk):
         self.inicio_sessao_timer = None
         self.loop_ativo = False
 
-        # Variáveis para arrastar a janela no modo mini
         self.x_mouse = 0
         self.y_mouse = 0
 
@@ -44,22 +42,21 @@ class ProTaskApp(ctk.CTk):
         self.setup_ui_completa()
         self.setup_ui_mini()
         
-        # Inicia no modo normal
         self.main_container.pack(fill="both", expand=True)
 
         self.renderizar_tarefas_salvas()
         self.atualizar_cronometro_visual()
 
     def setup_ui_completa(self):
-        # Header Superior (Barra de ferramentas)
+        # Barra superior
         self.top_bar = ctk.CTkFrame(self.main_container, height=40, fg_color="transparent")
         self.top_bar.pack(fill="x", padx=10, pady=(5, 0))
 
-        self.btn_mini = ctk.CTkButton(self.top_bar, text="🔳 MODO WIDGET (Always on Top)", width=120, height=30, 
+        self.btn_mini = ctk.CTkButton(self.top_bar, text="🔳 MODO WIDGET", width=120, height=30, 
                                       fg_color="#3B8ED0", hover_color="#1f538d", command=self.alternar_modo_mini)
         self.btn_mini.pack(side="right", padx=5)
 
-        # Entrada de tarefas
+        # Entrada de dados
         self.header = ctk.CTkFrame(self.main_container)
         self.header.pack(pady=10, padx=20, fill="x")
 
@@ -71,10 +68,10 @@ class ProTaskApp(ctk.CTk):
         self.menu_categoria.pack(side="left", padx=10, pady=20)
         self.menu_categoria.set("Organização")
 
-        self.btn_add = ctk.CTkButton(self.header, text="Nova Task", command=self.adicionar_tarefa, font=("Arial", 13, "bold"), width=100)
+        self.btn_add = ctk.CTkButton(self.header, text="+ Adicionar", command=self.adicionar_tarefa, font=("Arial", 13, "bold"), width=100)
         self.btn_add.pack(side="right", padx=20)
 
-        # Lista de tarefas
+        # Scroll para lista
         self.scroll_frame = ctk.CTkScrollableFrame(self.main_container, fg_color="transparent")
         self.scroll_frame.pack(pady=0, padx=20, fill="both", expand=True)
 
@@ -87,28 +84,25 @@ class ProTaskApp(ctk.CTk):
         self.btn_export.pack(fill="x")
 
     def setup_ui_mini(self):
-        """Configura a interface da caixinha flutuante."""
         self.lbl_mini_nome = ctk.CTkLabel(self.mini_container, text="Nenhuma task ativa", font=("Arial", 12, "bold"), text_color="#3B8ED0")
         self.lbl_mini_nome.pack(pady=(10, 0), padx=10)
 
         self.lbl_mini_tempo = ctk.CTkLabel(self.mini_container, text="00:00:00", font=("Consolas", 22, "bold"))
         self.lbl_mini_tempo.pack(pady=0)
 
-        self.lbl_instrucao = ctk.CTkLabel(self.mini_container, text="Clique para expandir | Arraste para mover", font=("Arial", 8), text_color="gray")
+        self.lbl_instrucao = ctk.CTkLabel(self.mini_container, text="Duplo clique p/ expandir | Arraste", font=("Arial", 8), text_color="gray")
         self.lbl_instrucao.pack(pady=(0, 5))
 
-        # Eventos para clicar e expandir ou arrastar
         self.mini_container.bind("<Button-1>", self.iniciar_arrasto)
         self.mini_container.bind("<B1-Motion>", self.executar_arrasto)
         self.mini_container.bind("<Double-Button-1>", lambda e: self.alternar_modo_mini())
         
-        # Aplicar binds aos filhos também (nome e tempo)
         for widget in [self.lbl_mini_nome, self.lbl_mini_tempo, self.lbl_instrucao]:
             widget.bind("<Button-1>", self.iniciar_arrasto)
             widget.bind("<B1-Motion>", self.executar_arrasto)
             widget.bind("<Double-Button-1>", lambda e: self.alternar_modo_mini())
 
-    # --- Lógica de Arrastar Janela Sem Bordas ---
+    # --- Lógica de Janela ---
     def iniciar_arrasto(self, event):
         self.x_mouse = event.x
         self.y_mouse = event.y
@@ -116,28 +110,19 @@ class ProTaskApp(ctk.CTk):
     def executar_arrasto(self, event):
         deltax = event.x - self.x_mouse
         deltay = event.y - self.y_mouse
-        new_x = self.winfo_x() + deltax
-        new_y = self.winfo_y() + deltay
-        self.geometry(f"+{new_x}+{new_y}")
+        self.geometry(f"+{self.winfo_x() + deltax}+{self.winfo_y() + deltay}")
 
     def alternar_modo_mini(self):
         if not self.modo_mini:
-            # ENTRAR NO MODO MINI (Always on Top)
             self.main_container.pack_forget()
-            
-            # Cálculo para canto superior direito
             screen_width = self.winfo_screenwidth()
             pos_x = screen_width - self.largura_mini - 20
-            pos_y = 50
-            
-            self.overrideredirect(True) # Remove bordas
-            self.geometry(f"{self.largura_mini}x{self.altura_mini}+{pos_x}+{pos_y}")
+            self.overrideredirect(True)
+            self.geometry(f"{self.largura_mini}x{self.altura_mini}+{pos_x}+50")
             self.attributes("-topmost", True)
-            
             self.mini_container.pack(fill="both", expand=True)
             self.modo_mini = True
         else:
-            # VOLTAR AO MODO NORMAL
             self.mini_container.pack_forget()
             self.overrideredirect(False)
             self.attributes("-topmost", False)
@@ -145,11 +130,7 @@ class ProTaskApp(ctk.CTk):
             self.main_container.pack(fill="both", expand=True)
             self.modo_mini = False
 
-    # --- Lógica de Dados e Backend ---
-
-    def formatar_tempo(self, segundos):
-        return str(timedelta(seconds=int(segundos)))
-
+    # --- Lógica de Dados e Exclusão ---
     def carregar_dados(self):
         if os.path.exists(self.db_file):
             try:
@@ -158,10 +139,35 @@ class ProTaskApp(ctk.CTk):
         return []
 
     def salvar_dados(self):
-        dados_purificados = [{'nome': t['nome'], 'categoria': t.get('categoria', 'Geral'), 
-                             'tempo_total': t['tempo_total'], 'data_inicio': t['data_inicio'], 
-                             'data_fim': t['data_fim']} for t in self.tarefas]
-        with open(self.db_file, 'w') as f: json.dump(dados_purificados, f, indent=4)
+        dados_limpos = [{'nome': t['nome'], 'categoria': t.get('categoria', 'Geral'), 
+                        'tempo_total': t['tempo_total'], 'data_inicio': t['data_inicio'], 
+                        'data_fim': t['data_fim']} for t in self.tarefas]
+        with open(self.db_file, 'w') as f: json.dump(dados_limpos, f, indent=4)
+
+    def excluir_tarefa(self, index):
+        nome_tarefa = self.tarefas[index]['nome']
+        if messagebox.askyesno("Excluir", f"Tem certeza que deseja excluir a tarefa:\n'{nome_tarefa}'?"):
+            # Se a tarefa a ser excluída é a que está a correr, paramos o timer
+            if self.tarefa_em_andamento_index == index:
+                self.loop_ativo = False
+                self.tarefa_em_andamento_index = None
+                self.lbl_mini_nome.configure(text="Nenhuma task ativa")
+                self.lbl_mini_tempo.configure(text="00:00:00")
+            
+            # Se a tarefa excluída estava antes da atual, ajustamos o índice
+            elif self.tarefa_em_andamento_index is not None and index < self.tarefa_em_andamento_index:
+                self.tarefa_em_andamento_index -= 1
+
+            self.tarefas.pop(index)
+            self.salvar_dados()
+            self.recarregar_lista_completa()
+
+    def recarregar_lista_completa(self):
+        # Limpa todos os widgets do scroll frame
+        for widget in self.scroll_frame.winfo_children():
+            widget.destroy()
+        # Renderiza novamente
+        self.renderizar_tarefas_salvas()
 
     def adicionar_tarefa(self):
         nome = self.input_tarefa.get().strip()
@@ -169,7 +175,7 @@ class ProTaskApp(ctk.CTk):
         self.tarefas.append({'nome': nome, 'categoria': self.menu_categoria.get(), 'tempo_total': 0, 
                              'data_inicio': None, 'data_fim': None, 'ui_widgets': {}})
         self.input_tarefa.delete(0, 'end')
-        self.renderizar_uma_tarefa(len(self.tarefas) - 1)
+        self.recarregar_lista_completa()
         self.salvar_dados()
 
     def renderizar_uma_tarefa(self, index):
@@ -183,18 +189,31 @@ class ProTaskApp(ctk.CTk):
         ctk.CTkLabel(info_cont, text=t['nome'], font=("Arial", 14, "bold"), anchor="w").pack(fill="x")
         ctk.CTkLabel(info_cont, text=f"🏷️ {t.get('categoria', 'Geral')}", font=("Arial", 11), text_color="#3B8ED0", anchor="w").pack(fill="x")
 
-        time_cont = ctk.CTkFrame(frame, fg_color="transparent")
-        time_cont.pack(side="right", padx=15)
+        ctrl_cont = ctk.CTkFrame(frame, fg_color="transparent")
+        ctrl_cont.pack(side="right", padx=15)
 
-        lbl_tempo = ctk.CTkLabel(time_cont, text=self.formatar_tempo(t['tempo_total']), font=("Consolas", 18, "bold"))
+        lbl_tempo = ctk.CTkLabel(ctrl_cont, text=self.formatar_tempo(t['tempo_total']), font=("Consolas", 18, "bold"))
         lbl_tempo.pack(side="left", padx=20)
 
-        btn = ctk.CTkButton(time_cont, text="START", width=80, command=lambda i=index: self.toggle_timer(i))
-        btn.pack(side="right")
+        # Botão START/STOP
+        btn_txt = "STOP" if self.tarefa_em_andamento_index == index else "START"
+        btn_color = "#A83232" if self.tarefa_em_andamento_index == index else ctk.ThemeManager.theme["CTkButton"]["fg_color"]
+        
+        btn = ctk.CTkButton(ctrl_cont, text=btn_txt, width=70, fg_color=btn_color, command=lambda i=index: self.toggle_timer(i))
+        btn.pack(side="left", padx=5)
+
+        # Botão EXCLUIR
+        btn_del = ctk.CTkButton(ctrl_cont, text="X", width=30, fg_color="#444444", hover_color="#A83232", command=lambda i=index: self.excluir_tarefa(i))
+        btn_del.pack(side="left", padx=5)
+
         self.tarefas[index]['ui_widgets'] = {'btn': btn, 'lbl_tempo': lbl_tempo}
 
     def renderizar_tarefas_salvas(self):
         for i in range(len(self.tarefas)): self.renderizar_uma_tarefa(i)
+
+    # --- Cronômetro e Auxiliares ---
+    def formatar_tempo(self, segundos):
+        return str(timedelta(seconds=int(segundos)))
 
     def toggle_timer(self, index):
         if self.tarefa_em_andamento_index == index: self.parar(index)
@@ -210,19 +229,21 @@ class ProTaskApp(ctk.CTk):
             self.tarefas[index]['data_inicio'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         
         self.tarefas[index]['ui_widgets']['btn'].configure(text="STOP", fg_color="#A83232")
-        self.lbl_mini_nome.configure(text=self.tarefas[index]['nome']) # Atualiza nome no modo mini
+        self.lbl_mini_nome.configure(text=self.tarefas[index]['nome'])
         self.salvar_dados()
 
     def parar(self, index):
-        self.tarefas[index]['tempo_total'] += time.time() - self.inicio_sessao_timer
+        if self.inicio_sessao_timer:
+            self.tarefas[index]['tempo_total'] += time.time() - self.inicio_sessao_timer
         self.tarefas[index]['data_fim'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        self.tarefas[index]['ui_widgets']['btn'].configure(text="START", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"])
-        self.tarefas[index]['ui_widgets']['lbl_tempo'].configure(text=self.formatar_tempo(self.tarefas[index]['tempo_total']))
+        
+        btn_color = ctk.ThemeManager.theme["CTkButton"]["fg_color"]
+        if 'ui_widgets' in self.tarefas[index] and 'btn' in self.tarefas[index]['ui_widgets']:
+            self.tarefas[index]['ui_widgets']['btn'].configure(text="START", fg_color=btn_color)
         
         self.tarefa_em_andamento_index = None
         self.loop_ativo = False
         self.lbl_mini_nome.configure(text="Nenhuma task ativa")
-        self.lbl_mini_tempo.configure(text="00:00:00")
         self.salvar_dados()
 
     def atualizar_cronometro_visual(self):
@@ -231,10 +252,8 @@ class ProTaskApp(ctk.CTk):
             atual = self.tarefas[idx]['tempo_total'] + (time.time() - self.inicio_sessao_timer)
             tempo_str = self.formatar_tempo(atual)
             
-            # Atualiza na lista principal
-            self.tarefas[idx]['ui_widgets']['lbl_tempo'].configure(text=tempo_str, text_color="#3B8ED0")
-            
-            # Atualiza no WIDGET MINI
+            if 'ui_widgets' in self.tarefas[idx]:
+                self.tarefas[idx]['ui_widgets']['lbl_tempo'].configure(text=tempo_str, text_color="#3B8ED0")
             self.lbl_mini_tempo.configure(text=tempo_str)
             
         self.after(1000, self.atualizar_cronometro_visual)

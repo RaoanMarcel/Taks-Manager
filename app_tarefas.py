@@ -18,9 +18,9 @@ class ProTaskApp(ctk.CTk):
         self.largura_normal = 1000
         self.altura_normal = 750
         
-        # --- ALTERAÇÃO AQUI: Tamanho do Widget reduzido ---
-        self.largura_mini = 230  # Antes era 320
-        self.altura_mini = 85    # Antes era 130
+        # Widget Slim
+        self.largura_mini = 230 
+        self.altura_mini = 85   
         
         # Cores e Estilos
         self.cor_fundo = "#1a1a1a"
@@ -154,32 +154,29 @@ class ProTaskApp(ctk.CTk):
 
         self.tarefas[index]['ui_widgets'] = {'lbl_tempo': lbl_tempo}
 
-    # --- Lógica de Widget Mini (COMPACTO) ---
     def setup_ui_mini(self):
-        # ALTERAÇÃO: Font menor e padding reduzido para caber no widget pequeno
         self.lbl_mini_nome = ctk.CTkLabel(self.mini_container, text="Aguardando...", 
                                           font=("Segoe UI", 11, "bold"), text_color=self.cor_borda_ativa)
-        self.lbl_mini_nome.pack(pady=(5, 0), padx=10) # Padding top reduzido para 5
+        self.lbl_mini_nome.pack(pady=(5, 0), padx=10) 
 
-        # ALTERAÇÃO: Font do relógio reduzida de 32 para 24
         self.lbl_mini_tempo = ctk.CTkLabel(self.mini_container, text="00:00:00", 
                                            font=("Consolas", 24, "bold"))
         self.lbl_mini_tempo.pack(pady=0)
 
         self.lbl_instrucao = ctk.CTkLabel(self.mini_container, text=":: Arraste ::", 
                                           font=("Arial", 8), text_color="gray")
-        self.lbl_instrucao.pack(pady=(0, 2)) # Padding bottom reduzido
+        self.lbl_instrucao.pack(pady=(0, 2)) 
 
-        # Bindings
         for widget in [self.mini_container, self.lbl_mini_nome, self.lbl_mini_tempo, self.lbl_instrucao]:
             widget.bind("<Button-1>", self.iniciar_arrasto)
             widget.bind("<B1-Motion>", self.executar_arrasto)
             widget.bind("<Double-Button-1>", lambda e: self.alternar_modo_mini())
 
-    # --- Nova Funcionalidade: Finalizar Ciclo ---
+    # --- CORREÇÃO: Função Finalizar Ciclo ---
     def finalizar_ciclo(self, index):
         t = self.tarefas[index]
         
+        # Se estiver rodando, para a contagem para salvar o tempo atual exato
         if self.tarefa_em_andamento_index == index:
             self.parar(index)
         
@@ -190,15 +187,22 @@ class ProTaskApp(ctk.CTk):
             return
 
         if messagebox.askyesno("Finalizar Ciclo", f"Deseja finalizar o ciclo atual de:\n'{t['nome']}'?\n\nO tempo será salvo no histórico e o cronômetro zerado."):
+            # Salva no histórico
             t['historico_acumulado'] = t.get('historico_acumulado', 0) + tempo_sessao
+            
+            # Zera o tempo atual
             t['tempo_atual'] = 0
             t['data_fim'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             
             self.salvar_dados()
+            
+            # --- CORREÇÃO VISUAL AQUI ---
+            # Forçamos o texto do Widget Mini a zerar, pois o loop do timer parou
+            self.lbl_mini_tempo.configure(text="0:00:00")
+            
+            # Recarregamos a lista, que vai ler 'tempo_atual' = 0 e criar o card zerado
             self.recarregar_lista_completa()
-            self.atualizar_cronometro_visual()
 
-    # --- Lógica Core ---
     def carregar_dados(self):
         if os.path.exists(self.db_file):
             try:
@@ -268,18 +272,22 @@ class ProTaskApp(ctk.CTk):
             self.tarefas.pop(index)
             self.salvar_dados()
             self.recarregar_lista_completa()
+            self.lbl_mini_tempo.configure(text="0:00:00") # Reseta visual se deletar a ativa
 
     def atualizar_cronometro_visual(self):
+        # Só atualiza SE houver loop ativo
         if self.loop_ativo and self.tarefa_em_andamento_index is not None:
             idx = self.tarefa_em_andamento_index
             atual = self.tarefas[idx]['tempo_atual'] + (time.time() - self.inicio_sessao_timer)
             tempo_str = self.formatar_tempo(atual)
             
+            # Atualiza card principal
             if 'ui_widgets' in self.tarefas[idx]:
                 try:
                     self.tarefas[idx]['ui_widgets']['lbl_tempo'].configure(text=tempo_str)
                 except: pass
             
+            # Atualiza mini widget
             self.lbl_mini_tempo.configure(text=tempo_str)
             
         self.after(1000, self.atualizar_cronometro_visual)
@@ -318,12 +326,9 @@ class ProTaskApp(ctk.CTk):
         if not self.modo_mini:
             self.main_container.pack_forget()
             self.overrideredirect(True)
-            
-            # Atualiza para usar as dimensões reduzidas
             w, h = self.largura_mini, self.altura_mini
             x = self.winfo_screenwidth() - w - 20
             self.geometry(f"{w}x{h}+{x}+50")
-            
             self.attributes("-topmost", True)
             self.mini_container.pack(fill="both", expand=True)
             self.modo_mini = True
